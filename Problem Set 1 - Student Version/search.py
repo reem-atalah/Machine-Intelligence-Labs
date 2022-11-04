@@ -163,36 +163,34 @@ def BestFirstSearch(problem: Problem[S, A], initial_state: S, heuristic: Heurist
     step = 1
     frontier= queue.PriorityQueue()
     explored = set()
-    frontier.put((0+heuristic(problem,node),step,0,heuristic(problem,node),node,[]))
+    frontier.put((heuristic(problem,node),step,node,[]))
     
     while frontier.queue:
-        node = list(frontier.get()) # node[0] = cost, node[1] = step, node[2]=state, node[3] = path, node[4] = heuristic
-        if problem.is_goal(node[4]): 
-            return node[5]
-        explored.add(node[4])
-        path = node[5]
-        for action in problem.get_actions(node[4]):
+        node = list(frontier.get()) # node[0] = heuristic, node[1] = step, node[2]=state, node[3] = path
+        if problem.is_goal(node[2]): 
+            return node[3]
+        explored.add(node[2])
+        path = node[3]
+        for action in problem.get_actions(node[2]):
             inFrontier=0
-            child = problem.get_successor(node[4],action)
+            child = problem.get_successor(node[2],action)
             if child not in explored :
-                # cost
-                costTotal = node[2] + problem.get_cost(node[4], action) 
                 # update node if it has less cost in another place 
                 for fronty in list(frontier.queue):
                     fronty = list(fronty)
-                    if child == fronty[4] :
+                    if child == fronty[2] :
                         inFrontier = 1 # don't add it again down
-                        if ( costTotal+ heuristic(problem,child) ) < (fronty[2]+fronty[3]):
+                        if heuristic(problem,child)  < fronty[0]:
                             frontier.queue.remove(tuple(fronty))
                             newPath = list(path)
                             newPath.append(action)
                             step +=1
-                            frontier.put((costTotal+heuristic(problem,child) ,step, costTotal+heuristic(problem,child),child,newPath)) 
+                            frontier.put((heuristic(problem,child) ,step, child,newPath)) 
                             break
                 if not inFrontier:
                     # path
                     newPath = list(path)
                     newPath.append(action)
-                    frontier.put((costTotal +heuristic(problem,child) , step,costTotal ,heuristic(problem,child), child, newPath))
+                    frontier.put((heuristic(problem,child) , step, child, newPath))
                     step +=1
 
