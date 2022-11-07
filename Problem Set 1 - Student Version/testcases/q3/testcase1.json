@@ -7,5 +7,5 @@
     "comparison_args": [
         "[(['c', 'g'], ['a', 'b', 'c', 'g']), (['c', 'g'], ['a', 'd', 'c', 'g'])]",
         "'graphs/graph1_fig.txt'"
-    ] 
+    ]
 }

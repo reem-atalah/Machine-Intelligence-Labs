@@ -24,16 +24,15 @@ class ParkingProblem(Problem[ParkingState, ParkingAction]):
     # This function should return the initial state
     def get_initial_state(self) -> ParkingState:
         #TODO: ADD YOUR CODE HERE
-        # utils.NotImplemented()
+        # initial state is the initial Point/place of all cars
         initial_state = self.cars
-        # initial_state= ParkingState(self.cars[i] for i in range(len(self.cars)))
         return initial_state
     
     # This function should return True if the given state is a goal. Otherwise, it should return False.
-    # correct insha'allah
     def is_goal(self, state: ParkingState) -> bool:
         #TODO: ADD YOUR CODE HERE
-        # utils.NotImplemented()
+        # We reach goal when all cars are on their correct slots
+        # For each value of i, states(Points)[i]=slots[i] -where i is the car number-
         for point in self.slots:
             if state[self.slots[point]] != point:
                 return False
@@ -42,21 +41,36 @@ class ParkingProblem(Problem[ParkingState, ParkingAction]):
     # This function returns a list of all the possible actions that can be applied to the given state
     def get_actions(self, state: ParkingState) -> List[ParkingAction]:
         #TODO: ADD YOUR CODE HERE
-        # utils.NotImplemented()
+        # List to append all actions could be occured, each for each car
         actions = []
+
+        # index to trace which car we're talking about
         index=0
+
+        # for each car
         for point in state:
+            # see all possible directions (R,L,U,D)
             for direction in Direction:
+
+                # add the direction to car[i]'s current position
+                # direction.to_vector(): change the direction to vector point
                 position = point+ direction.to_vector()
-                # Disallow walking into walls
+                
                 check = True
+
+                # Disallow walking into walls, walk in points have dots only
                 if position not in self.passages: continue
 
                 # Disallow walking on another car
+                # can't go to point where another car is already there
                 for i in range(len(state)):
+                    # check for all car states positions that aren't same as the position I want to go through 
                     if position == state[i]:
                         check = False
                         break
+                
+                # if true, then no car in this position and it's a valid path
+                # so append the direction that causes this path, and the correct car index
                 if check : actions.append((index,direction.__str__()))
             index+=1
         return actions
@@ -64,18 +78,30 @@ class ParkingProblem(Problem[ParkingState, ParkingAction]):
     # This function returns a new state which is the result of applying the given action to the given state
     def get_successor(self, state: ParkingState, action: ParkingAction) -> ParkingState:
         #TODO: ADD YOUR CODE HERE
-        # utils.NotImplemented()
+        # convert state tuple to list, to acces it easily
         stateList =list(state)
+
+        # action[0] : index of the car we want to apply action on it
+        # stateList[action[0]]: get current position then update it
+        # action[1]: has the direction that is possible to be applied
+        # action[1].to_vector(): change the direction to vector point
         stateList[action[0]]= stateList[action[0]]+action[1].to_vector()
+
+        # return state after updating the position with the new action applied
         return tuple(stateList)
 
     
     # This function returns the cost of applying the given action to the given state
     def get_cost(self, state: ParkingState, action: ParkingAction) -> float:
         #TODO: ADD YOUR CODE HERE
-        # utils.NotImplemented()
+        # Apply the action as in get_successor()
         position = state[action[0]]+ action[1].to_vector()
+
+        # check if the new position is on one the parking slots.
         if position in self.slots:
+            # action[0] : index of the car we are appling action on it
+            # if the index of slot we're at, not equal to index of car applied the action
+            # then it's penalized with cost=101 otherwise cost is 1 only
             if self.slots[position] == action[0]:
                 return 1
             else: return 101
