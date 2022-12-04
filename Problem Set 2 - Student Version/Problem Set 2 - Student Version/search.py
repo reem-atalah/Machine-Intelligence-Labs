@@ -102,15 +102,96 @@ def alphabeta(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_dept
 
     return alphabeta_helper(state, -math.inf, math.inf, max_depth)
 
+
 # Apply Alpha Beta pruning with move ordering and return the tree value and the best action
 # Hint: Read the hint for minimax.
 def alphabeta_with_move_ordering(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_depth: int = -1) -> Tuple[float, A]:
     #TODO: Write this function
-    NotImplemented()
+    # NotImplemented()
+    def alphabeta_helper(state, alpha, beta, depth):
+        agent = game.get_turn(state) #returns the turn of the player. 0 for player, 1 for monster, 2 for monster 2, etc.
+
+        terminal, values = game.is_terminal(state) #returns if the state is terminal and return the values for all the agents
+        if terminal: return values[agent], None
+
+        if depth == 0: #if we have reached the maximum depth
+            if agent == 0: #if it is the player's turn (max node) return the heuristic value
+                return heuristic(game, state, agent), None
+            else: #if it is the monster's turn (min node) return the negative of the heuristic value
+                return -heuristic(game, state, agent), None
+
+        #get all the actions and the resulting states
+        # actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)]
+
+        if agent == 0: #if it is the player's turn (max node) return the action that leads to the maximum value of the heuristic function
+            max_eval=-math.inf
+            max_action=None
+            for action in game.get_actions(state):
+                eval, _ = alphabeta_helper(game.get_successor(state, action), alpha, beta, depth-1)
+                if eval > max_eval:
+                    max_eval = eval
+                    max_action = action
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break
+            return max_eval, max_action
+
+        else: 
+            min_eval=math.inf
+            min_action=None
+            for action in game.get_actions(state):
+                eval, _ = alphabeta_helper(game.get_successor(state, action), alpha, beta, depth-1)
+                if eval < min_eval:
+                    min_eval = eval
+                    min_action = action
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break
+            return min_eval, min_action
+   
+
+    return alphabeta_helper(state, -math.inf, math.inf, max_depth)
+
 
 # Apply Expectimax search and return the tree value and the best action
 # Hint: Read the hint for minimax, but note that the monsters (turn > 0) do not act as min nodes anymore,
 # they now act as chance nodes (they act randomly).
 def expectimax(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_depth: int = -1) -> Tuple[float, A]:
     #TODO: Write this function
-    NotImplemented()
+    # NotImplemented()
+    # Chance nodes take the average of all available values giving us the ‘expected value’ of the node.
+    
+    def expectimax_helper(state, depth):
+        agent = game.get_turn(state) #returns the turn of the player. 0 for player, 1 for monster, 2 for monster 2, etc.
+
+        terminal, values = game.is_terminal(state) #returns if the state is terminal and return the values for all the agents
+        if terminal: return values[agent], None #if it is terminal return the value for the player
+
+        if depth == 0: #if we have reached the maximum depth
+            if agent == 0: #if it is the player's turn (max node) return the heuristic value
+                return heuristic(game, state, agent), None
+            else: #if it is the monster's turn (min node) return the negative of the heuristic value
+                return -heuristic(game, state, agent), None
+
+        if agent == 0: #if it is the player's turn (max node) return the action that leads to the maximum value of the heuristic function (as minimax)
+            max_eval=-math.inf
+            max_action=None
+            for action in game.get_actions(state):
+                eval, _ = expectimax_helper(game.get_successor(state, action), depth-1)
+                if eval > max_eval:
+                    max_eval = eval
+                    max_action = action
+            return max_eval, max_action
+
+        else:  #if it is the monster's turn (chance node) return the action that leads to the average value of the heuristic function
+            total_eval=0
+            for action in game.get_actions(state):
+                eval, _ = expectimax_helper(game.get_successor(state, action), depth-1)
+                total_eval += eval 
+
+            # assuming all nodes have equal probability of being chosen 
+            # we can return any action since they all have the same value
+            return total_eval/len(game.get_actions(state)) , action  #return the average value of the heuristic function
+   
+
+    return expectimax_helper(state, max_depth)
