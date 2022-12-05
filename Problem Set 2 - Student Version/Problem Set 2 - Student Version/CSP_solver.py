@@ -12,14 +12,18 @@ def one_consistency(problem: Problem) -> bool:
     for constraint in problem.constraints:
         if(type(constraint) == UnaryConstraint):
             variable = constraint.variable # get the variable of the constraint 
-            for value in problem.domains[variable].copy(): # check each value in the domain of the variable
+            values = problem.domains[variable].copy() # get the domain of the variable 
+            accepted_values = [] # create a list to store the accepted values
+            for value in values: # check each value in the domain of the variable
                 dicty ={variable: value} # create a dictionary with the variable and its value
-                if not constraint.is_satisfied(dicty): # check if the dictionary is consistent with the constraints
-                    problem.domains[variable].remove(value) # if not, remove the value from the domain
-                    if len(problem.domains[variable]) == 0: # if the domain is empty, return false
-                        return False
-    problem.constraints = [constraint for constraint in problem.constraints if type(constraint) != UnaryConstraint] # remove the unary constraints from the problem
+                if constraint.is_satisfied(dicty): # check if the dictionary is consistent with the constraints
+                    accepted_values.append(value) # if yes, add the value to the list of accepted values
+            problem.domains[variable] = set(accepted_values) # update the domain of the variable to be the list of accepted values
+            if len(problem.domains[variable]) == 0: # if the domain is empty, return false
+                return False
+    problem.constraints = [constraint for constraint in problem.constraints if type(constraint) == BinaryConstraint] # remove the unary constraints from the problem
     return True
+            
 
 # This function should implement forward checking
 # The function is given the problem, the variable that has been assigned and its assigned value and the domains of the unassigned values
@@ -36,37 +40,18 @@ def forward_checking(problem: Problem, assigned_variable: str, assigned_value: A
     #TODO: Write this function
     # NotImplemented()
     for constraint in problem.constraints:
-        if(type(constraint) == BinaryConstraint):
-            variable1 = constraint.variables[0] # get the 1st variable of the constraint 
-            variable2 = constraint.variables[1] # get the 2nd variable of the constraint
-            if variable1 == assigned_variable: # check if the 1st variable is the assigned variable
-                if len(domains[variable2]) == 0: # check if the 2nd variable has no domain
-                    continue
-                for value in domains[variable2].copy(): # check each value in the domain of the 2nd variable
-                    dicty ={variable1: assigned_value, variable2: value} # create a dictionary with the 1st variable and its value and the 2nd variable and its value
-                    if not constraint.is_satisfied(dicty): # check if the dictionary is consistent with the constraints
-                        domains[variable2].remove(value) # if not, remove the value from the domain
-                        if len(domains[variable2]) == 0: # if the domain is empty, return false
-                            return False
-            elif variable2 == assigned_variable: # check if the 2nd variable is the assigned variable
-                if len(domains[variable1]) == 0: # check if the 1st variable has no domain
-                    continue
-                for value in domains[variable1].copy(): # check each value in the domain of the 1st variable
-                    dicty ={variable1: value, variable2: assigned_value} # create a dictionary with the 1st variable and its value and the 2nd variable and its value
-                    if not constraint.is_satisfied(dicty): # check if the dictionary is consistent with the constraints
-                        domains[variable1].remove(value) # if not, remove the value from the domain
-                        if len(domains[variable1]) == 0: # if the domain is empty, return false
-                            return False
+        if(type(constraint) == BinaryConstraint) and (assigned_variable in constraint.variables):
+            other_variable = constraint.get_other(assigned_variable)
+            accepted_values = []
+            if domains.get(other_variable) != None:
+                for value in domains[other_variable]:
+                    dicty = {assigned_variable: assigned_value, other_variable: value}
+                    if constraint.is_satisfied(dicty):
+                        accepted_values.append(value)
+                domains[other_variable] = set(accepted_values)
+                if len(domains[other_variable]) == 0:
+                    return False
     return True
-            # print(variable , constraint.condition)
-    #         for value in problem.domains[variable].copy(): # check each value in the domain of the variable
-    #             dicty ={variable: value} # create a dictionary with the variable and its value
-    #             if not constraint.is_satisfied(dicty): # check if the dictionary is consistent with the constraints
-    #                 problem.domains[variable].remove(value) # if not, remove the value from the domain
-    #                 if len(problem.domains[variable]) == 0: # if the domain is empty, return false
-    #                     # print(problem.domains)
-    #                     return False
-    # return True
 
 # This function should return the domain of the given variable order based on the "least restraining value" heuristic.
 # IMPORTANT: This function should not modify any of the given arguments.
