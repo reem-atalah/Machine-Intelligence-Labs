@@ -112,7 +112,12 @@ def alphabeta_with_move_ordering(game: Game[S, A], state: S, heuristic: Heuristi
         agent = game.get_turn(state) #returns the turn of the player. 0 for player, 1 for monster, 2 for monster 2, etc.
 
         terminal, values = game.is_terminal(state) #returns if the state is terminal and return the values for all the agents
-        if terminal: return values[agent], None
+        if terminal: 
+            if agent == 0:
+                return values[agent], None #if it is terminal return the value for the player
+            else:
+                return -values[agent], None
+
 
         if depth == 0: #if we have reached the maximum depth
             if agent == 0: #if it is the player's turn (max node) return the heuristic value
@@ -120,14 +125,15 @@ def alphabeta_with_move_ordering(game: Game[S, A], state: S, heuristic: Heuristi
             else: #if it is the monster's turn (min node) return the negative of the heuristic value
                 return -heuristic(game, state, agent), None
 
-        #get all the actions and the resulting states
-        # actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)]
-
         if agent == 0: #if it is the player's turn (max node) return the action that leads to the maximum value of the heuristic function
+            #get all the actions and the resulting states
+            actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)]
+            #sort the actions based on the heuristic value of the resulting states (descending order for max node, ascending order for min node) 
+            sorted_actions_states = sorted(actions_states, key=lambda x: heuristic(game, x[1], agent), reverse=agent==0)
             max_eval=-math.inf
             max_action=None
-            for action in game.get_actions(state):
-                eval, _ = alphabeta_helper(game.get_successor(state, action), alpha, beta, depth-1)
+            for action, state in sorted_actions_states:
+                eval, _ = alphabeta_helper(state, alpha, beta, depth-1)
                 if eval > max_eval:
                     max_eval = eval
                     max_action = action
@@ -136,11 +142,15 @@ def alphabeta_with_move_ordering(game: Game[S, A], state: S, heuristic: Heuristi
                     break
             return max_eval, max_action
 
-        else: 
+        else:
+            #get all the actions and the resulting states
+            actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)]
+            #sort the actions based on the heuristic value of the resulting states (descending order for max node, ascending order for min node) 
+            sorted_actions_states = sorted(actions_states, key=lambda x: -heuristic(game, x[1], agent), reverse=agent==0)
             min_eval=math.inf
             min_action=None
-            for action in game.get_actions(state):
-                eval, _ = alphabeta_helper(game.get_successor(state, action), alpha, beta, depth-1)
+            for action, state in sorted_actions_states:
+                eval, _ = alphabeta_helper(state, alpha, beta, depth-1)
                 if eval < min_eval:
                     min_eval = eval
                     min_action = action
@@ -148,10 +158,8 @@ def alphabeta_with_move_ordering(game: Game[S, A], state: S, heuristic: Heuristi
                 if beta <= alpha:
                     break
             return min_eval, min_action
-   
 
-    return alphabeta_helper(state, -math.inf, math.inf, max_depth)
-
+    return alphabeta_helper(state, -math.inf, math.inf, max_depth) 
 
 # Apply Expectimax search and return the tree value and the best action
 # Hint: Read the hint for minimax, but note that the monsters (turn > 0) do not act as min nodes anymore,
@@ -165,7 +173,11 @@ def expectimax(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_dep
         agent = game.get_turn(state) #returns the turn of the player. 0 for player, 1 for monster, 2 for monster 2, etc.
 
         terminal, values = game.is_terminal(state) #returns if the state is terminal and return the values for all the agents
-        if terminal: return values[agent], None #if it is terminal return the value for the player
+        if terminal: 
+            if agent == 0:
+                return values[agent], None #if it is terminal return the value for the player
+            else:
+                return -values[agent], None
 
         if depth == 0: #if we have reached the maximum depth
             if agent == 0: #if it is the player's turn (max node) return the heuristic value

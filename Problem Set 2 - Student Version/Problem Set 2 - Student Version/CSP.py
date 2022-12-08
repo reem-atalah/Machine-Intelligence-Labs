@@ -58,7 +58,7 @@ class BinaryConstraint(Constraint):
         return variable2 if variable == variable1 else variable1
 
 # This defines a generic CSP problem
-class Problem: 
+class Problem:
     variables: List[str]            # A list of the variable names in the problem
     domains: Dict[str, set]         # A dictionary containing the domain of each variable.
                                     # The domain is a set of values that the variable can take. 
