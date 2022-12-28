@@ -46,6 +46,8 @@ def minimax(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_depth:
     actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)] 
 
     if agent == 0: #if it is the player's turn (max node) return the action that leads to the maximum value of the heuristic function 
+        # the -index is used to break ties in the case of multiple actions with the same value
+        # max_depth-1 is used to decrease the depth by 1 for each recursive call
         value, _, action = max((minimax(game, state, heuristic, max_depth-1)[0], -index, action) for index, (action , state) in enumerate(actions_states))
     else: #if it is the monster's turn (min node) return the action that leads to the minimum value of the heuristic function
         value, _, action = min((minimax(game, state, heuristic, max_depth-1)[0], -index, action) for index, (action , state) in enumerate(actions_states))
@@ -58,7 +60,7 @@ def alphabeta(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_dept
     #TODO: Write this function
     # NotImplemented() 
     
-    def alphabeta_helper(state, alpha, beta, depth):
+    def alphabeta_helper(state, alpha, beta, depth): #helper function to implement alpha beta pruning to take the state, alpha, beta and depth as input
         agent = game.get_turn(state) #returns the turn of the player. 0 for player, 1 for monster, 2 for monster 2, etc.
 
         terminal, values = game.is_terminal(state) #returns if the state is terminal and return the values for all the agents
@@ -70,44 +72,41 @@ def alphabeta(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_dept
             else: #if it is the monster's turn (min node) return the negative of the heuristic value
                 return -heuristic(game, state, agent), None
 
-        #get all the actions and the resulting states
-        # actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)]
-
         if agent == 0: #if it is the player's turn (max node) return the action that leads to the maximum value of the heuristic function
-            max_eval=-math.inf
-            max_action=None
-            for action in game.get_actions(state):
-                eval, _ = alphabeta_helper(game.get_successor(state, action), alpha, beta, depth-1)
-                if eval > max_eval:
-                    max_eval = eval
-                    max_action = action
-                alpha = max(alpha, eval)
-                if beta <= alpha:
+            max_eval=-math.inf #initialize the maximum evaluation to negative infinity
+            max_action=None #initialize the maximum action to None
+            for action in game.get_actions(state): #for each action in the list of actions in their upcoming order
+                eval, _ = alphabeta_helper(game.get_successor(state, action), alpha, beta, depth-1) #get the evaluation that will be compared to the maximum evaluation
+                if eval > max_eval: #if the evaluation is greater than the maximum evaluation
+                    max_eval = eval #update the maximum evaluation
+                    max_action = action  #and update the maximum action
+                alpha = max(alpha, eval) #update the alpha value, as it maximizes the value of the evaluation of the max player
+                if beta <= alpha: #if the beta value is less than or equal to the alpha value then we can prune the rest of the tree as it will not be considered in the final evaluation 
                     break
             return max_eval, max_action
 
         else: 
-            min_eval=math.inf
-            min_action=None
-            for action in game.get_actions(state):
-                eval, _ = alphabeta_helper(game.get_successor(state, action), alpha, beta, depth-1)
-                if eval < min_eval:
-                    min_eval = eval
-                    min_action = action
-                beta = min(beta, eval)
-                if beta <= alpha:
+            min_eval=math.inf #initialize the minimum evaluation to positive infinity
+            min_action=None #initialize the minimum action to None
+            for action in game.get_actions(state): #for each action in the list of actions in their upcoming order
+                eval, _ = alphabeta_helper(game.get_successor(state, action), alpha, beta, depth-1) #get the evaluation that will be compared to the minimum evaluation
+                if eval < min_eval: #if the evaluation is less than the minimum evaluation
+                    min_eval = eval #update the minimum evaluation
+                    min_action = action #and update the minimum action
+                beta = min(beta, eval) #update the beta value, as it minimizes the value of the evaluation of the max player
+                if beta <= alpha: #if the beta value is less than or equal to the alpha value then we can prune the rest of the tree as it will not be considered in the final evaluation
                     break
             return min_eval, min_action
    
 
-    return alphabeta_helper(state, -math.inf, math.inf, max_depth)
-
+    return alphabeta_helper(state, -math.inf, math.inf, max_depth) # begin with the initial state, alpha as negative infinity, beta as positive infinity and the maximum depth
 
 # Apply Alpha Beta pruning with move ordering and return the tree value and the best action
 # Hint: Read the hint for minimax.
 def alphabeta_with_move_ordering(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_depth: int = -1) -> Tuple[float, A]:
     #TODO: Write this function
-    # NotImplemented()
+    # same as alpha beta pruning but with move ordering (sorting) of actions to improve the performance
+    # this makes the algorithm more efficient as it will prune the tree more efficiently
     def alphabeta_helper(state, alpha, beta, depth):
         agent = game.get_turn(state) #returns the turn of the player. 0 for player, 1 for monster, 2 for monster 2, etc.
 
@@ -125,11 +124,15 @@ def alphabeta_with_move_ordering(game: Game[S, A], state: S, heuristic: Heuristi
             else: #if it is the monster's turn (min node) return the negative of the heuristic value
                 return -heuristic(game, state, agent), None
 
+        #get all the actions and the resulting states,get them all once, and then we can sort them based on the heuristic value of the resulting states
+        actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)]
+
         if agent == 0: #if it is the player's turn (max node) return the action that leads to the maximum value of the heuristic function
-            #get all the actions and the resulting states
-            actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)]
-            #sort the actions based on the heuristic value of the resulting states (descending order for max node, ascending order for min node) 
+
+            #sort the actions based on the heuristic value of the resulting states (descending order for max node) 
             sorted_actions_states = sorted(actions_states, key=lambda x: heuristic(game, x[1], agent), reverse=agent==0)
+
+            # all the next is the same as the alphabeta pruning function
             max_eval=-math.inf
             max_action=None
             for action, state in sorted_actions_states:
@@ -143,10 +146,10 @@ def alphabeta_with_move_ordering(game: Game[S, A], state: S, heuristic: Heuristi
             return max_eval, max_action
 
         else:
-            #get all the actions and the resulting states
-            actions_states = [(action, game.get_successor(state, action)) for action in game.get_actions(state)]
-            #sort the actions based on the heuristic value of the resulting states (descending order for max node, ascending order for min node) 
+            #sort the actions based on the heuristic value of the resulting states (ascending order for min node) 
             sorted_actions_states = sorted(actions_states, key=lambda x: -heuristic(game, x[1], agent), reverse=agent==0)
+
+            # all the next is the same as the alphabeta pruning function
             min_eval=math.inf
             min_action=None
             for action, state in sorted_actions_states:
@@ -174,10 +177,10 @@ def expectimax(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_dep
 
         terminal, values = game.is_terminal(state) #returns if the state is terminal and return the values for all the agents
         if terminal: 
-            if agent == 0:
+            if agent == 0: 
                 return values[agent], None #if it is terminal return the value for the player
             else:
-                return -values[agent], None
+                return -values[agent], None #if it is terminal return the negative of the value for the monster
 
         if depth == 0: #if we have reached the maximum depth
             if agent == 0: #if it is the player's turn (max node) return the heuristic value
@@ -189,7 +192,7 @@ def expectimax(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_dep
             max_eval=-math.inf
             max_action=None
             for action in game.get_actions(state):
-                eval, _ = expectimax_helper(game.get_successor(state, action), depth-1)
+                eval, _ = expectimax_helper(game.get_successor(state, action), depth-1) 
                 if eval > max_eval:
                     max_eval = eval
                     max_action = action
@@ -199,7 +202,7 @@ def expectimax(game: Game[S, A], state: S, heuristic: HeuristicFunction, max_dep
             total_eval=0
             for action in game.get_actions(state):
                 eval, _ = expectimax_helper(game.get_successor(state, action), depth-1)
-                total_eval += eval 
+                total_eval += eval #sum the values of the heuristic function of all the actions
 
             # assuming all nodes have equal probability of being chosen 
             # we can return any action since they all have the same value
