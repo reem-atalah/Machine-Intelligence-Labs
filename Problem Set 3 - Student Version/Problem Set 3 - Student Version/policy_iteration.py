@@ -30,29 +30,32 @@ class PolicyIterationAgent(Agent[S, A]):
     # Given the utilities for the current policy, compute the new policy
     def update_policy(self):
         #TODO: Complete this function
-        
+        # make dictionary to store policy and update policy at the end of all states
+        policy = {} 
         for state in self.mdp.get_states():
             if self.mdp.is_terminal(state):
-                self.policy[state] = None
+                policy[state] = None
             else:
                 max_utility = float('-inf')
-                max_action = None
+                best_policy = None
                 for action in self.mdp.get_actions(state):
                     # get transition prob and state
                     utility_v = self.mdp.get_successor(state, action)
                     utility = 0
-                    # for next_state, prob in utility_v.items():
-                    #     # get reward
-                    #     reward = self.mdp.get_reward(state, action, next_state)
-                    #     utility += prob * (reward + self.discount_factor * self.utilities[next_state])
-                    utility = sum(prob * self.utilities[next_state] for next_state, prob in utility_v.items())
+                    # use reward, discount_factor, and utilities to calculate utility
+                    for next_state, prob in utility_v.items():
+                        # get reward
+                        reward = self.mdp.get_reward(state, action, next_state)
+                        utility += prob * (reward + self.discount_factor  * self.utilities[next_state])
+                    # utility = sum(prob * self.utilities[next_state] for next_state, prob in utility_v.items())
                     if utility > max_utility:
                         max_utility = utility
-                        max_action = action
-                self.policy[state] = max_action
-    
+                        best_policy = action # best policy is achieved when using the action that maximizes the utility
+                policy[state] = best_policy
+        self.policy = policy
     # Given the current policy, compute the utilities for this policy
     # Hint: you can use numpy to solve the linear equations. We recommend that you use numpy.linalg.lstsq
+    
     def update_utilities(self):
         #TODO: Complete this function
         # NotImplemented()
@@ -65,17 +68,19 @@ class PolicyIterationAgent(Agent[S, A]):
 
         # Fill in the values of A and b to solve the linear equations 
         for i, state in enumerate(states):
-            # if terminal state then A[i, i] = 1 and b[i] = 0 which means that the utility of the terminal state is 0
-            if self.mdp.is_terminal(state):
-                A[i, i] = 1
-                b[i] = 0
-            else:
-                A[i, i] = 1
-                for j, next_state in enumerate(states):
+            stating = {state: 0 for state in self.mdp.get_states()}
+            stating[state] = 1
+            dummy_b = 0
+            if self.policy[state] is not None:
+                # don't update A and B directly, use dummy dictionary to store the values
+                # self.policy[state] : action to be taken
+                for next_state,prob in self.mdp.get_successor(state, self.policy[state]).items() :
                     # get_transition_prob
-                    A[i, j] -= self.discount_factor * sum(prob * self.utilities[next_state] for prob,_ in self.mdp.get_successor(state, self.policy[state]))
-
-                b[i] = self.mdp.get_reward(state, self.policy[state], next_state)
+                    stating[next_state] -= prob * self.discount_factor
+                    dummy_b += prob * self.mdp.get_reward(state, self.policy[state], next_state)
+            A[i] = np.array(list(stating.values()))
+            b[i] = dummy_b
+        # solve the linear equations using numpy.linalg.lstsq
         self.utilities = dict(zip(states, np.linalg.lstsq(A, b, rcond=None)[0]))
     
     # Applies a single utility update followed by a single policy update
